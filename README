@@ -1,71 +1,9 @@
-Build instructions for BookKeeper
+Apache的项目ZooKeeper有了一个兄弟项目: BookKeeper。
 
--------------------------------------------------------------------------------
-Requirements:
+BookKeeper是一个可靠地记录日志流的一个系统， 它是被设计来记录Write Ahead Log的（操作具体数据结构之前先记录日志），Write Ahead Log在数据库里面很常见， 实际上BookKeeper的创意来自于hadoop里面的NameNode，NameNode在把数据写入内存之前先写入磁盘日志，但是写入本地磁盘有个问题：如果这台机器的磁盘坏了， 那么数据还是恢复不了。BookKeeper就是为了弥补这个缺陷的，这样之后NameNode不用写入自己的本地磁盘，而是写入BookKeeper系统，而可靠性则由BookKeeper来保证。虽然BookKeeper是为hadoop设计的，但是对于任何需要这种可靠性的日志的系统并且系统里面只有个线程写日志的话，那么都可以用这个系统。
 
-* Unix System
-* JDK 1.6
-* Maven 3.0
-* Internet connection for first build (to fetch all dependencies)
+BookKeeper里面的服务器叫做: bookies， 日志流叫做ledgers, BookKeeper被设计成高可靠性的， 即使有写bookie挂掉了，只要有足够数量的bookie还在正常工作的话，那么整个BookKeeper集群就可以正常工作。
 
--------------------------------------------------------------------------------
-The BookKeeper project contains:
+跟大多数可靠性系统一样，BookKeeper为把同一份数据存多份在各个bookie上面。
 
- - bookkeeper-server            (BookKeeper server and client)
- - bookkeeper-benchmark         (Benchmark suite for testing BookKeeper performance)
- - bookkeeper-stats             (BookKeeper stats library)
- - bookkeeper-stats-providers   (BookKeeper stats providers)
-
-BookKeeper is a system to reliably log streams of records. It is designed to 
-store  write ahead logs, such as those found in database or database like 
-applications.
-
---------------------------------------------------------------------------------
-How do I build?
-
- BookKeeper uses maven as its build system. To build, run "mvn package" from the 
- top-level directory, or from within any of the submodules.
-
- Useful maven commands are:
-
- * Clean                     : mvn clean
- * Compile                   : mvn compile
- * Run tests                 : mvn test 
- * Create JAR                : mvn package
- * Run findbugs              : mvn compile findbugs:findbugs
- * Install JAR in M2 cache   : mvn install
- * Deploy JAR to Maven repo  : mvn deploy
- * Run Rat                   : mvn apache-rat:check
- * Build javadocs            : mvn compile javadoc:aggregate
- * Build distribution        : mvn package assembly:single
-
- Tests options:
-
- * Use -DskipTests to skip tests when running the following Maven goals:
-    'package',  'install', 'deploy' or 'verify'
- * -Dtest=<TESTCLASSNAME>,<TESTCLASSNAME#METHODNAME>,....
- * -Dtest.exclude=<TESTCLASSNAME>
- * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
-
---------------------------------------------------------------------------------
-How do I run the services?
-
- Running BookKeeper service, requires a running ZooKeeper service 
- (see http://zookeeper.apache.org). 
-
- To start a bookkeeper service quickly for testing, run:
-   
-   $ bookkeeper-server/bin/bookkeeper localbookie 10
-
- This will start a standalone, ZooKeeper instance and 10 BookKeeper bookies.
- Note that this is only useful for testing. Data is not persisted between runs.
-
- To start a real BookKeeper service, you must set up a ZooKeeper instance and
- run start a bookie on several machines. Modify bookkeeper-server/conf/bk_server.conf
- to point to your ZooKeeper instance. To start a bookie run:
-
-   $ bookkeeper-server/bin/bookkeeper bookie
-
- You can get more help on using these commands by running:
-
-   $ bookkeeper-server/bin/bookkeeper help
+BookKeeper的数据模型是一个扁平的结构，每个ledger由一个long型的key唯一确定。ledgers只支持append操作，而且同时只能有一个单线程来写。
